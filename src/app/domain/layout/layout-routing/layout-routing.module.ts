@@ -18,6 +18,10 @@ const routes: Routes = [
         path: 'Home',
         loadChildren: '../../../feature/home/home.module#HomeModule'
       },
+      {
+        path: 'callback',
+        loadChildren: '../../../feature/auth0-callback/auth0-callback.module#Auth0CallbackModule'
+      },
       {path: '**', pathMatch: 'full', component: NotFoundComponent}
     ]
   }
