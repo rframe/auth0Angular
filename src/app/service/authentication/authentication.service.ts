@@ -21,10 +21,18 @@ export class AuthenticationService {
 
   private _isAuthenticated$ = new BehaviorSubject(false);
 
+  /**
+   * Is User Authenticated as Observable
+   * @returns {Observable<boolean>}
+   */
   get isAuthenticated$(): Observable<boolean> {
     return this._isAuthenticated$.asObservable();
   }
 
+  /**
+   * Class Constructor Function
+   * @param {Router} router
+   */
   constructor(private router: Router) {
     this.isAuthenticated();
   }
@@ -77,6 +85,32 @@ export class AuthenticationService {
     const authenticated = new Date().getTime() < expiresAt;
     this._isAuthenticated$.next(authenticated);
     return authenticated;
+  }
+
+  /**
+   * Bearer Token
+   * @returns {string}
+   */
+  get bearerToken(): string {
+    return `Bearer ${this._accessToken}`;
+  }
+
+  /**
+   * Access Token
+   * @returns {string}
+   * @private
+   */
+  private get _accessToken(): string {
+    return localStorage.getItem('access_token');
+  }
+
+  /**
+   * Id Token
+   * @returns {string}
+   * @private
+   */
+  private get _idToken(): string {
+    return localStorage.getItem('id_token');
   }
 
   /**

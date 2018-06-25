@@ -1,16 +1,24 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {AuthenticationService} from '../../service/authentication/authentication.service';
-import {Observable} from 'rxjs/index';
+import {Observable, Subscription} from 'rxjs/index';
+import {PingService} from '../../service/ping/ping.service';
+import {map, take} from 'rxjs/internal/operators';
+
+export const logValue = map((value) => {
+  console.log(value);
+  return value;
+});
 
 @Component({
   selector: 'app-layout',
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss']
 })
-export class LayoutComponent implements OnInit {
+export class LayoutComponent implements OnInit, OnDestroy {
   isAuthenticated$: Observable<boolean>;
 
-  constructor(private _authenticationService: AuthenticationService) {
+  private _subscriptions: Array<Subscription> = [];
+  constructor(private _authenticationService: AuthenticationService, private _ping: PingService) {
   }
 
   /**
@@ -18,6 +26,13 @@ export class LayoutComponent implements OnInit {
    */
   ngOnInit() {
     this.isAuthenticated$ = this._authenticationService.isAuthenticated$;
+  }
+
+  /**
+   * Angular Lifecycle Hook On Destroy
+   */
+  ngOnDestroy() {
+    this._subscriptions.forEach((sub) => sub && sub.unsubscribe && sub.unsubscribe());
   }
 
   /**
@@ -32,5 +47,41 @@ export class LayoutComponent implements OnInit {
    */
   logout() {
     this._authenticationService.logout();
+  }
+
+  /**
+   * Test a call to the server that is not secured with authorization
+   */
+  testInsecureCall() {
+      this._ping.ping()
+        .pipe(
+          take(1),
+          logValue
+        )
+        .toPromise();
+  }
+
+  /**
+   * Test a call to the server that is secured with authorization
+   */
+  testSecureCall() {
+      this._ping.pingSecure()
+        .pipe(
+          take(1),
+          logValue
+        )
+        .toPromise()
+  }
+
+  /**
+   * List Claims for the currently logged in user
+   */
+  listClaims() {
+      this._ping.claims()
+        .pipe(
+          take(1),
+          logValue
+        )
+        .toPromise();
   }
 }
