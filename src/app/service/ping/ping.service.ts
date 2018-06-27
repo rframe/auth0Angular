@@ -22,7 +22,7 @@ export class PingService {
    * Get the claims for the current user from the server
    * @returns {Observable<any>}
    */
-  claims(): Observable<any> {
+  claims() {
     return this.get<any>('/api/claims');
   }
 
@@ -30,7 +30,7 @@ export class PingService {
    * Ping the server with an insecure request
    * @returns {Observable<string>}
    */
-  ping(): Observable<string> {
+  ping() {
     return this.get<string>('/api/ping', { responseType: 'text' });
   }
 
@@ -38,7 +38,7 @@ export class PingService {
    * Ping the server with a secure request
    * @returns {Observable<string>}
    */
-  pingSecure(): Observable<string> {
+  pingSecure() {
     return this.get<string>('/api/ping/secure', { responseType: 'text' });
   }
 
@@ -48,18 +48,7 @@ export class PingService {
    * @param {HttpOptions} options
    * @returns {Observable<t>}
    */
-  private get<t>(url: string, options?: {
-    headers?: HttpHeaders | {
-      [header: string]: string | string[];
-    };
-    observe?: 'body';
-    params?: HttpParams | {
-      [param: string]: string | string[];
-    };
-    reportProgress?: boolean;
-    responseType?: 'json';
-    withCredentials?: boolean;
-  }) {
+  private get<t>(url: string, options = null) {
     const defaultOptions = this.defaultOptions(options);
     return this._http.get<t>(url, defaultOptions)
       .pipe(
@@ -74,7 +63,7 @@ export class PingService {
    * @param {{headers: HttpHeaders}} options
    * @returns {{headers: HttpHeaders}}
    */
-  private defaultOptions(options: {headers: HttpHeaders})  {
+  private defaultOptions(options)  {
 
     options = options || {  };
     if (!options.headers) {

@@ -3,8 +3,11 @@ import * as auth0 from 'auth0-js';
 import {Router} from '@angular/router';
 import {BehaviorSubject, Observable} from 'rxjs/index';
 import {environment} from '../../../environments/environment';
+import {authenticationKeys} from '../../models/enums/authentication-keys';
+import {AuthenticatedUser} from '../../models/interfaces/authenticated-user';
 
 (window as any).global = window;
+
 
 @Injectable({
   providedIn: 'root',
@@ -16,17 +19,17 @@ export class AuthenticationService {
     responseType: 'token id_token',
     audience: environment.auth0_audience,
     redirectUri: environment.auth0_redirectUri,
-    scope: 'openid'
+    scope: 'openid email profile'
   });
 
-  private _isAuthenticated$ = new BehaviorSubject(false);
+  private _authenticatedUser$ = new BehaviorSubject<AuthenticatedUser>(null);
 
   /**
    * Is User Authenticated as Observable
    * @returns {Observable<boolean>}
    */
-  get isAuthenticated$(): Observable<boolean> {
-    return this._isAuthenticated$.asObservable();
+  get authenticatedUser$(): Observable<AuthenticatedUser> {
+    return this._authenticatedUser$.asObservable();
   }
 
   /**
@@ -34,8 +37,9 @@ export class AuthenticationService {
    * @param {Router} router
    */
   constructor(private router: Router) {
-    this.isAuthenticated();
+    this.updateAuthenticatedUser$();
   }
+
 
   /**
    * Log the user Int, open auth0 login page
@@ -50,6 +54,7 @@ export class AuthenticationService {
   handleAuthentication(): void {
     this._auth0.parseHash((err, authResult) => {
       if (authResult && authResult.accessToken && authResult.idToken) {
+        console.log(authResult);
         // This seems to cause the navigation to Home to fail, has will be removed upon navigation anyways
         // window.location.hash = '';
         this.setSession(authResult);
@@ -66,10 +71,12 @@ export class AuthenticationService {
    */
   logout(): void {
     // Remove tokens and expiry time from localStorage
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('id_token');
-    localStorage.removeItem('expires_at');
-    this.isAuthenticated();
+    localStorage.removeItem(authenticationKeys.accessToken);
+    localStorage.removeItem(authenticationKeys.idToken);
+    localStorage.removeItem(authenticationKeys.expiresAt);
+    localStorage.removeItem(authenticationKeys.emailVerified);
+    localStorage.removeItem(authenticationKeys.emailAddress);
+    this.updateAuthenticatedUser$();
     // Go back to the home route
     this.router.navigate(['/Home']);
   }
@@ -78,13 +85,11 @@ export class AuthenticationService {
    * Check if the user is Authenticate
    * @returns {boolean}
    */
-  isAuthenticated(): boolean {
+  get isAuthenticated(): boolean {
     // Check whether the current time is past the
     // Access Token's expiry time
-    const expiresAt = JSON.parse(localStorage.getItem('expires_at') || '{}');
-    const authenticated = new Date().getTime() < expiresAt;
-    this._isAuthenticated$.next(authenticated);
-    return authenticated;
+    const expiresAt = this._expiresAt;
+    return new Date().getTime() < expiresAt;
   }
 
   /**
@@ -96,12 +101,31 @@ export class AuthenticationService {
   }
 
   /**
+   * Set Authenticated User Observable
+   */
+  updateAuthenticatedUser$() {
+    const expiresAt = this._expiresAt;
+    const isAuthenticated = this.isAuthenticated;
+
+    const emailAddressVerified = this._emailVerified;
+    const emailAddress = this._emailAddress;
+    const authenticatedUser = {
+      expiresAt,
+      isAuthenticated,
+      emailAddressVerified,
+      emailAddress
+    } as AuthenticatedUser;
+
+    this._authenticatedUser$.next(authenticatedUser);
+  }
+
+  /**
    * Access Token
    * @returns {string}
    * @private
    */
   private get _accessToken(): string {
-    return localStorage.getItem('access_token');
+    return localStorage.getItem(authenticationKeys.accessToken);
   }
 
   /**
@@ -110,7 +134,34 @@ export class AuthenticationService {
    * @private
    */
   private get _idToken(): string {
-    return localStorage.getItem('id_token');
+    return localStorage.getItem(authenticationKeys.idToken);
+  }
+
+  /**
+   * Get is email verified
+   * @returns {boolean}
+   * @private
+   */
+  private get _emailVerified(): boolean {
+    return JSON.parse(localStorage.getItem(authenticationKeys.emailVerified)) || false;
+  }
+
+  /**
+   * Get Email Address
+   * @returns {boolean}
+   * @private
+   */
+  private get _emailAddress(): string {
+    return localStorage.getItem(authenticationKeys.emailAddress);
+  }
+
+  /**
+   * Get Expires At
+   * @returns {any}
+   * @private
+   */
+  private get _expiresAt() {
+    return JSON.parse(localStorage.getItem(authenticationKeys.expiresAt) || '{}');
   }
 
   /**
@@ -120,9 +171,12 @@ export class AuthenticationService {
   private setSession(authResult): void {
     // Set the time that the Access Token will expire at
     const expiresAt = JSON.stringify((authResult.expiresIn * 1000) + new Date().getTime());
-    localStorage.setItem('access_token', authResult.accessToken);
-    localStorage.setItem('id_token', authResult.idToken);
-    localStorage.setItem('expires_at', expiresAt);
-    this.isAuthenticated();
+    localStorage.setItem(authenticationKeys.accessToken, authResult.accessToken);
+    localStorage.setItem(authenticationKeys.idToken, authResult.idToken);
+    localStorage.setItem(authenticationKeys.expiresAt, expiresAt);
+    localStorage.setItem(authenticationKeys.emailVerified,
+      (!!(authResult.idTokenPayload && authResult.idTokenPayload.email_verified)).toString());
+    localStorage.setItem(authenticationKeys.emailAddress, authResult.idTokenPayload && authResult.idTokenPayload.email);
+    this.updateAuthenticatedUser$();
   }
 }

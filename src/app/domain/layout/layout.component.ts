@@ -2,12 +2,9 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {AuthenticationService} from '../../service/authentication/authentication.service';
 import {Observable, Subscription} from 'rxjs/index';
 import {PingService} from '../../service/ping/ping.service';
-import {map, take} from 'rxjs/internal/operators';
-
-export const logValue = map((value) => {
-  console.log(value);
-  return value;
-});
+import {take} from 'rxjs/internal/operators';
+import {AuthenticatedUser} from '../../models/interfaces/authenticated-user';
+import {logValue} from '../../models/rxjs/operators';
 
 @Component({
   selector: 'app-layout',
@@ -15,7 +12,7 @@ export const logValue = map((value) => {
   styleUrls: ['./layout.component.scss']
 })
 export class LayoutComponent implements OnInit, OnDestroy {
-  isAuthenticated$: Observable<boolean>;
+  isAuthenticated$: Observable<AuthenticatedUser>;
 
   private _subscriptions: Array<Subscription> = [];
   constructor(private _authenticationService: AuthenticationService, private _ping: PingService) {
@@ -25,7 +22,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
    * Angular Lifecycle hook onit
    */
   ngOnInit() {
-    this.isAuthenticated$ = this._authenticationService.isAuthenticated$;
+    this.isAuthenticated$ = this._authenticationService.authenticatedUser$;
   }
 
   /**
@@ -70,7 +67,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
           take(1),
           logValue
         )
-        .toPromise()
+        .toPromise();
   }
 
   /**
