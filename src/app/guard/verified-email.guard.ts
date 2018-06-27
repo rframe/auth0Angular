@@ -3,6 +3,7 @@ import {CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, CanActivateChi
 import { Observable } from 'rxjs';
 import {AuthenticationService} from '../service/authentication/authentication.service';
 import {AuthenticatedUser} from '../models/interfaces/authenticated-user';
+import {map} from 'rxjs/internal/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -17,10 +18,11 @@ export class VerifiedEmailGuard implements CanActivate, CanActivateChild {
     state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean {
     this._authenticationService
       .updateAuthenticatedUser$();
+
     return this._authenticationService
       .authenticatedUser$
       .pipe(
-        (x: AuthenticatedUser) => x.emailAddressVerified
+        map((x: AuthenticatedUser) => x.emailAddressVerified)
       );
   }
 

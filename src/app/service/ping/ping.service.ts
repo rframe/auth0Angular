@@ -53,7 +53,7 @@ export class PingService {
     return this._http.get<t>(url, defaultOptions)
       .pipe(
         catchError((x) => {
-          return Observable.create<t>(y => { y.next(this.undefined); });
+          return Observable.create(y => { y.next(this.undefined); });
         })
       );
   }
